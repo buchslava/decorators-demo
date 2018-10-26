@@ -30,7 +30,7 @@ class FakeDdfCsvReader {
     return res;
   }
 
-  // @verbose
+  @verbose
   sum(a, b) {
     return a + b;
   }
