@@ -23,7 +23,7 @@ class FakeDdfCsvReader {
 
   @verbose
   @asyncBehavior
-  async query(@verbose par, isRejectionNeeded = false) {
+  async query(@verbose par, isRejectionNeeded = false, options = {}) {
     this.isRejectionNeeded = isRejectionNeeded;
     const res = await this.loadDataPackage(par);
 
@@ -45,6 +45,9 @@ const reader = new FakeDdfCsvReader();
 (async () => {
   try {
     let result = await reader.query({ select: 'concepts' })
+    console.log('result is: ', result);
+
+    result = await reader.query({ select: 'concepts' }, false, { verbose: true })
     console.log('result is: ', result);
 
     result = await reader.query({ select: 'fake-concepts' }, true);

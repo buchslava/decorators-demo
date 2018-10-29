@@ -34,34 +34,48 @@ function verboseMethod(target, method: string, descriptor) {
 
     return data;
   };
+  const hasVerboseMode = args => !!args && args.length > 1 && typeof args[2] === 'object' && args[2].verbose === true;
 
   if (asyncBehaviorMethods.has(getMethodKey(method, target.constructor.name))) {
-    descriptor.value = async function (...args: any[]) {
-      const data = getData(args);
-      this.verbosityData.push({ method, status: 'started', data, time: now() });
+    descriptor.value = function (...args: any[]) {
+      return new Promise((resolve, reject) => {
+        const data = getData(args);
 
-      try {
-        const result = await originalMethod.apply(this, args);
+        if (!hasVerboseMode(args)) {
+          this.verbosityData.push({ method, status: 'started', data, time: now() });
+        }
 
-        this.verbosityData.push({ method, status: 'ok', feature: 'async', time: now() });
+        originalMethod.apply(this, args).then(result => {
+          if (!hasVerboseMode(args)) {
+            this.verbosityData.push({ method, status: 'ok', feature: 'async', time: now() });
+          }
 
-        return result;
-      } catch (error) {
-        this.verbosityData.push({ method, status: 'failed', error, time: now() });
+          resolve(result);
+        }).catch(error => {
+          this.verbosityData.push({ method, status: 'failed', error, time: now() });
 
-        throw error;
-      }
+          reject(error);
+        });
+      });
     }
   } else {
     descriptor.value = function (...args: any[]) {
       const data = getData(args);
-      this.verbosityData.push({ method, status: 'started', data, time: now() });
+      if (!hasVerboseMode(args)) {
+        this.verbosityData.push({ method, status: 'started', data, time: now() });
+      }
+
       const result = originalMethod.apply(this, args);
-      this.verbosityData.push({ method, status: 'ok', time: now() });
+
+      if (!hasVerboseMode(args)) {
+        this.verbosityData.push({ method, status: 'ok', time: now() });
+      }
 
       return result;
     }
   }
+
+  return descriptor;
 }
 
 function verboseParameter(target, propertyKey: string, parameterIndex: number) {
